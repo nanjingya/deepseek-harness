@@ -862,7 +862,7 @@ describe('tool-pdf conversion', () => {
     subprocess.handler = () => runResult()
     const value = await runPdfConversion(
       ctx,
-      { signal: testToolSignal },
+      { signal: testToolSignal } as never,
       { pdfPath: pdf, outputDir: out, dpi: 200, engine: 'auto', workers: 1 },
       { ...caps, maxOutputChars: 10_000 },
     )
