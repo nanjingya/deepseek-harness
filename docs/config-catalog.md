@@ -2499,6 +2499,44 @@ export interface Config {
 
 Source: [`packages/lsp/tool-lsp/src/index.ts:58`](../packages/lsp/tool-lsp/src/index.ts)
 
+<a id="deepseek-aidsh-tool-pdf"></a>
+
+## `@deepseek-ai/dsh-tool-pdf`
+
+Requires: `tools` · `systemPrompt` · `subprocess`
+
+```ts config-catalog
+/** Plugin config: host Python, engine root overrides, OCR defaults, and budgets. */
+export interface Config {
+  /** Python 3 interpreter. Defaults to `$PDF_WIKI_PYTHON` / `$DSH_PDF_PYTHON` / `python3`. */
+  python?: string
+  /**
+   * Absolute or workdir-relative engine root containing `pdf_wiki_parser.py`
+   * and `docx_exporter.py`. Defaults to the packaged `engine/`.
+   */
+  engineRoot?: string
+  /** Default page-render DPI when the tool call omits `dpi`. */
+  dpi?: number
+  /** Default OCR worker count when the tool call omits `workers`. */
+  workers?: number
+  /** Default OCR engine when the tool call omits `engine`. */
+  defaultEngine?: PdfOcrEngine
+  /** Max Markdown characters returned inline; the full file remains at `markdownPath`. */
+  maxOutputChars?: number
+  /** Terminate-escalation grace (ms) after the cooperative timeout. */
+  graceMs?: number
+  /** Cap on retained converter stderr for failure messages. */
+  stderrMaxBytes?: number
+  /** Cooperative tool-call timeout budget (ms). */
+  timeoutMs?: number
+}
+
+/** OCR engine choices accepted by the packaged converter. */
+export type PdfOcrEngine = 'auto' | 'vision' | 'paddleocr' | 'tesseract'
+```
+
+Source: [`packages/fs/tool-pdf/src/index.ts:71`](../packages/fs/tool-pdf/src/index.ts)
+
 <a id="deepseek-aidsh-tool-pwsh"></a>
 
 ## `@deepseek-ai/dsh-tool-pwsh`

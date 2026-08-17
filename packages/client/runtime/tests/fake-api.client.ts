@@ -180,6 +180,26 @@ export class FakeApiClient implements IApiClient {
     listDirectory: (payload: unknown) => this.record('host.listDirectory', payload, this.onListDirectory(payload)),
     createDirectory: (payload: unknown) => this.record('host.createDirectory', payload, this.onCreateDirectory(payload)),
     openPath: (payload: unknown) => this.record('host.openPath', payload, this.onOpenPath(payload)),
+    listSessionDirectory: (payload: unknown) => this.record('host.listSessionDirectory', payload, Promise.resolve(ok({
+      relativePath: (payload as { relativePath?: string }).relativePath ?? '',
+      entries: [],
+    }))),
+    searchSessionFiles: (payload: unknown) => this.record('host.searchSessionFiles', payload, Promise.resolve(ok({
+      matches: [],
+      truncated: false,
+    }))),
+    listSessionTerminals: (payload: unknown) => this.record('host.listSessionTerminals', payload, Promise.resolve(ok({ terminals: [] }))),
+    openSessionTerminal: (payload: unknown) => this.record('host.openSessionTerminal', payload, Promise.resolve(ok({
+      sessionId: 'pty-fake',
+      type: 'shell',
+      status: { kind: 'running' },
+      motd: '',
+    }))),
+    readSessionTerminal: (payload: unknown) => this.record('host.readSessionTerminal', payload, Promise.resolve(ok({
+      text: '', totalLines: 0, lineBegin: 0, lineEnd: 0, truncated: false,
+    }))),
+    sendSessionTerminal: (payload: unknown) => this.record('host.sendSessionTerminal', payload, Promise.resolve(ok({ accepted: true as const }))),
+    closeSessionTerminal: (payload: unknown) => this.record('host.closeSessionTerminal', payload, Promise.resolve(ok({ closed: true }))),
   }
 
   // The archive-set field defaults at the binding below so list stubs keep

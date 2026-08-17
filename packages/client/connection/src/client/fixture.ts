@@ -2562,6 +2562,20 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         return ok(request, { path: target })
       },
       openPath: request => ok(request, { opened: true as const }),
+      listSessionDirectory: request => ok(request, { relativePath: request.payload.relativePath ?? '', entries: [] }),
+      searchSessionFiles: request => ok(request, { matches: [], truncated: false }),
+      listSessionTerminals: request => ok(request, { terminals: [] }),
+      openSessionTerminal: request => ok(request, {
+        sessionId: 'pty-fixture-1',
+        type: 'shell',
+        status: { kind: 'running' },
+        motd: '',
+      }),
+      readSessionTerminal: request => ok(request, {
+        text: '', totalLines: 0, lineBegin: 0, lineEnd: 0, truncated: false,
+      }),
+      sendSessionTerminal: (request, _signal) => ok(request, { accepted: true as const }),
+      closeSessionTerminal: request => ok(request, { closed: true }),
     },
     workspace: {
       list: request => ok(request, {
@@ -3098,6 +3112,13 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'host.listDirectory': return this.api.host.listDirectory(request, new AbortController().signal)
       case 'host.createDirectory': return this.api.host.createDirectory(request)
       case 'host.openPath': return this.api.host.openPath(request, new AbortController().signal)
+      case 'host.listSessionDirectory': return this.api.host.listSessionDirectory(request, signal)
+      case 'host.searchSessionFiles': return this.api.host.searchSessionFiles(request, signal)
+      case 'host.listSessionTerminals': return this.api.host.listSessionTerminals(request)
+      case 'host.openSessionTerminal': return this.api.host.openSessionTerminal(request, signal)
+      case 'host.readSessionTerminal': return this.api.host.readSessionTerminal(request)
+      case 'host.sendSessionTerminal': return this.api.host.sendSessionTerminal(request, signal)
+      case 'host.closeSessionTerminal': return this.api.host.closeSessionTerminal(request)
       case 'workspace.list': return this.api.workspace.list(request)
       case 'workspace.create': return this.api.workspace.create(request)
       case 'workspace.rename': return this.api.workspace.rename(request)

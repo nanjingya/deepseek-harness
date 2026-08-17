@@ -129,9 +129,20 @@ describe('web command-line provider', () => {
     expect(observed.exits).toEqual([1])
   })
 
-  it('rejects the intentionally unsupported all-interfaces host before the consumer activates', async () => {
+  it('publishes the explicit all-interfaces host', async () => {
     const { values, observed } = await bootProvider(['--host', '0.0.0.0'])
-    expect(observed.out).toContain('--host 0.0.0.0 is intentionally not supported yet for safety: it would expose remote code execution to the network; use 127.0.0.1 instead')
+    expect(values).toEqual({ host: '0.0.0.0', trustedHosts: [] })
+    expect(observed.readerConfig).toEqual({
+      host: '0.0.0.0',
+      port: 3080,
+      trustedHosts: [],
+    })
+    expect(observed.exits).toEqual([])
+  })
+
+  it('rejects a host outside the loopback/all-interfaces contract before the consumer activates', async () => {
+    const { values, observed } = await bootProvider(['--host', '192.168.1.5'])
+    expect(observed.out).toContain('--host must be 127.0.0.1 or 0.0.0.0')
     expect(values).toBeUndefined()
     expect(observed.readerConfig).toBeUndefined()
     expect(observed.exits).toEqual([1])

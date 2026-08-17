@@ -32,6 +32,8 @@ The browser side of the dsh web GUI: shell boot, browser-host communication, sha
 | [`ui-skill/`](ui-skill/README.md) | Adds skill references to inline suggestions. |
 | [`ui-subagent/`](ui-subagent/README.md) | Provides subagent navigation, child transcript states, and inline references. |
 | [`ui-jobs/`](ui-jobs/README.md) | Lists this session's background jobs in the conversation header. |
+| [`ui-workspace-files/`](ui-workspace-files/README.md) | Browses the session project tree and adds `@` file references. |
+| [`ui-terminal/`](ui-terminal/README.md) | Shows a read-only PTY tab over agent-owned terminals. |
 | [`ui-model-selection/`](ui-model-selection/README.md) | Provides model selection in conversation surfaces. |
 | [`ui-permission/`](ui-permission-presets/README.md) | Configures default permissions and switches the current session's access. |
 | [`ui-plan/`](ui-plan/README.md) | Presents active plan-mode status and its exit control. |

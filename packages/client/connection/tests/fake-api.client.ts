@@ -146,6 +146,26 @@ export class FakeApiClient implements IApiClient {
     listDirectory: payload => this.record('host.listDirectory', payload, this.onListDirectory(payload)),
     createDirectory: payload => this.record('host.createDirectory', payload, this.onCreateDirectory(payload)),
     openPath: payload => this.record('host.openPath', payload, this.onOpenPath(payload)),
+    listSessionDirectory: payload => this.record('host.listSessionDirectory', payload, Promise.resolve(ok({
+      relativePath: (payload as { relativePath?: string }).relativePath ?? '',
+      entries: [],
+    }))),
+    searchSessionFiles: payload => this.record('host.searchSessionFiles', payload, Promise.resolve(ok({
+      matches: [],
+      truncated: false,
+    }))),
+    listSessionTerminals: payload => this.record('host.listSessionTerminals', payload, Promise.resolve(ok({ terminals: [] }))),
+    openSessionTerminal: payload => this.record('host.openSessionTerminal', payload, Promise.resolve(ok({
+      sessionId: 'pty-fake',
+      type: 'shell',
+      status: { kind: 'running' },
+      motd: '',
+    }))),
+    readSessionTerminal: payload => this.record('host.readSessionTerminal', payload, Promise.resolve(ok({
+      text: '', totalLines: 0, lineBegin: 0, lineEnd: 0, truncated: false,
+    }))),
+    sendSessionTerminal: payload => this.record('host.sendSessionTerminal', payload, Promise.resolve(ok({ accepted: true as const }))),
+    closeSessionTerminal: payload => this.record('host.closeSessionTerminal', payload, Promise.resolve(ok({ closed: true }))),
   }
 
   readonly workspace: IApiClient['workspace'] = {

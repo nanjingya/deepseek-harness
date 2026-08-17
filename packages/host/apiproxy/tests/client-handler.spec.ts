@@ -78,6 +78,13 @@ function scriptedApi(overrides: {
       listDirectory: r => ok(r, { path: '/t', home: '/t', crumbs: [], entries: [], truncated: false }),
       createDirectory: r => ok(r, { path: '/t/new' }),
       openPath: r => ok(r, { opened: true as const }),
+      listSessionDirectory: r => ok(r, { relativePath: '', entries: [] }),
+      searchSessionFiles: r => ok(r, { matches: [], truncated: false }),
+      listSessionTerminals: r => ok(r, { terminals: [] }),
+      openSessionTerminal: r => ok(r, { sessionId: 'pty-1', type: 'shell', status: { kind: 'running' as const }, motd: '' }),
+      readSessionTerminal: r => ok(r, { text: '', totalLines: 0, lineBegin: 0, lineEnd: 0, truncated: false }),
+      sendSessionTerminal: r => ok(r, { accepted: true as const }),
+      closeSessionTerminal: r => ok(r, { closed: true }),
       ...overrides.host,
     },
     workspace: {

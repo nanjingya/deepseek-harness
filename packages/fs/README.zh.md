@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-文件系统栈包括：提供方约定（执行世界路径、有界文本 I/O 与带可选版本防护的原子变更）、本地实现、政策门禁插件（已观察状态、编辑前读取、版本防护的写入/编辑）、面向模型的文件工具与执行器，以及基于 ripgrep 的发现工具。全部都是**产品**包。
+文件系统栈包括：提供方约定（执行世界路径、有界文本 I/O 与带可选版本防护的原子变更）、本地实现、政策门禁插件（已观察状态、编辑前读取、版本防护的写入/编辑）、面向模型的文件工具与执行器、基于 ripgrep 的发现工具，以及 PDF OCR/版面工具。全部都是**产品**包。
 
 | 包 | 角色 | ctx 键 |
 |---|---|---|
@@ -13,8 +13,9 @@
 | `fs-observation-policy/` | 政策门禁插件：通过 `fs/*` 事件门禁提供已观察状态、编辑前读取和版本防护的写入/编辑 | （无服务，仅有 `fs/*` 监听器） |
 | `tool-fs/` | 面向模型的 `read`/`write`/`edit` 工具以及执行器（通过 `ctx.fs` 读取，拥有读取窗口逻辑，分派 `fs/*`）；为会话 cwd 相对路径保留文件系统语义，并在已挂载的 `ctx.fs` 实施约束时声明沙箱升级字段 | （注册到 `ctx.tools`） |
 | `tool-fs-search/` | 面向模型的 `glob`/`grep` 发现工具，由经 `ctx.subprocess` spawn 的打包 `@vscode/ripgrep` 二进制文件支持，而不是使用 `ctx.fs` 提供方方法 | （注册到 `ctx.tools`） |
+| `tool-pdf/` | 面向模型的 `read_pdf` 工具：经 `ctx.subprocess` spawn 的打包南鲸 OCR/版面转换器，产出面向 LLM 的 Markdown 与可编辑 Word（在挂载 `ctx.skills` 时可选注册捆绑的 `read-pdf` skill） | （注册到 `ctx.tools`） |
 
-Service Definition 位于 `fs/fs/`。沙箱化、远程或限定项目作用域的文件系统后端可以替换 `fs-local`，而无需更改 Service Definition、政策门禁或面向模型的工具 schema：`fs-sandbox` 基于共享沙箱模式提供进程内路径围栏（[决策](../../.agents/notes/implemented/feature/2026-07-14-cross-family-fs-sandbox.md)），而 `fs-e2b` 则把文件状态置于与 E2B 子进程提供方共享的远程执行世界中（[决策](../../.agents/notes/implemented/architecture/2026-07-28-portable-execution-world-consumers.md)）。政策（`fs-observation-policy/`）是一个只通过 `fs/*` 事件门禁参与的插件，不是工具注入的服务；因此移除它会平稳失去政策，留下不受约束的裸提供方，而不会破坏工具。加载 `tool-fs/` 的部署也应加载该插件。模式围栏与编辑前读取门禁彼此正交，可以组合。发现（`tool-fs-search/`）有意不扩展提供方约定：搜索是由进程支持的 `rg` 工作流（经 `ctx.subprocess` spawn 的打包 `@vscode/ripgrep` 二进制文件），因此文件系统后端无需承担通用搜索约定；其工具会无条件注册。如果搜索工作目录与 `read` 根目录是同一工作区，结果就能继续读取，这也是其 README 所述的共置部署。
+Service Definition 位于 `fs/fs/`。沙箱化、远程或限定项目作用域的文件系统后端可以替换 `fs-local`，而无需更改 Service Definition、政策门禁或面向模型的工具 schema：`fs-sandbox` 基于共享沙箱模式提供进程内路径围栏（[决策](../../.agents/notes/implemented/feature/2026-07-14-cross-family-fs-sandbox.md)），而 `fs-e2b` 则把文件状态置于与 E2B 子进程提供方共享的远程执行世界中（[决策](../../.agents/notes/implemented/architecture/2026-07-28-portable-execution-world-consumers.md)）。政策（`fs-observation-policy/`）是一个只通过 `fs/*` 事件门禁参与的插件，不是工具注入的服务；因此移除它会平稳失去政策，留下不受约束的裸提供方，而不会破坏工具。加载 `tool-fs/` 的部署也应加载该插件。模式围栏与编辑前读取门禁彼此正交，可以组合。发现（`tool-fs-search/`）有意不扩展提供方约定：搜索是由进程支持的 `rg` 工作流（经 `ctx.subprocess` spawn 的打包 `@vscode/ripgrep` 二进制文件），因此文件系统后端无需承担通用搜索约定；其工具会无条件注册。如果搜索工作目录与 `read` 根目录是同一工作区，结果就能继续读取，这也是其 README 所述的共置部署。PDF 转换（`tool-pdf/`）同样不进入 `ctx.fs`：它经 `ctx.subprocess` spawn 打包的 OCR/版面引擎，并把 Markdown 与可编辑 Word 写到 `.dsh/pdf/`。
 
 ## 文件 I/O 不设超时
 

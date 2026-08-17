@@ -229,6 +229,9 @@
       config:
         sampleOverCapGlobResults: false
 
+    - id: tool-pdf
+      name: '@deepseek-ai/dsh-tool-pdf'
+
     - id: agent-instructions
       name: '@deepseek-ai/dsh-agent-instructions'
       config:

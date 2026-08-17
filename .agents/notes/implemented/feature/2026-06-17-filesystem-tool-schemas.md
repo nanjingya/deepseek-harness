@@ -89,7 +89,7 @@ The following are deliberately out of scope for the first filesystem schema pass
 - Model-facing `expected_hash`, `expected_version`, or `create_only` parameters.
 - Directory listing, glob, grep, and search tools.
 - Binary-safe read/write operations.
-- PDF/image/multimodal `read`.
+- PDF/image/multimodal `read` — images via `read_image`; workspace PDFs via sibling `read_pdf` ([decision](2026-08-17-read-pdf-tool.md)), not by overloading `read`.
 - Code Mode projection values for filesystem tools.
 - A canonical edit diff format.
 

@@ -159,6 +159,33 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
       async openPath(request) {
         return { rpcId: request.rpcId, result: { ok: true, value: { opened: true as const } } }
       },
+      async listSessionDirectory(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { relativePath: '', entries: [] } } }
+      },
+      async searchSessionFiles(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { matches: [], truncated: false } } }
+      },
+      async listSessionTerminals(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { terminals: [] } } }
+      },
+      async openSessionTerminal(request) {
+        return {
+          rpcId: request.rpcId,
+          result: { ok: true, value: { sessionId: 'pty-1', type: 'shell', status: { kind: 'running' as const }, motd: '' } },
+        }
+      },
+      async readSessionTerminal(request) {
+        return {
+          rpcId: request.rpcId,
+          result: { ok: true, value: { text: '', totalLines: 0, lineBegin: 0, lineEnd: 0, truncated: false } },
+        }
+      },
+      async sendSessionTerminal(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { accepted: true as const } } }
+      },
+      async closeSessionTerminal(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { closed: true } } }
+      },
     },
     workspace: {
       async list(request) {
@@ -800,6 +827,39 @@ describe('resolveBase', () => {
       expect(probe3.urls[0]).toMatch(/^http:\/\/dsh\.internal\//)
     } finally {
       delete globalWithLocation.location
+    }
+  })
+})
+
+describe('mintRpcId', () => {
+  it('mints a UUID without crypto.randomUUID (insecure browser origins)', async () => {
+    class Probe extends AbstractApiClient {
+      minted = ''
+      protected async doFetch(_input: URL): Promise<Response> {
+        return Response.json({
+          type: 'server-response',
+          rpcId: this.minted,
+          result: { ok: true, value: { items: [] } },
+        })
+      }
+
+      protected override mintRpcId(): ReturnType<AbstractApiClient['mintRpcId']> {
+        const id = super.mintRpcId()
+        this.minted = id
+        return id
+      }
+    }
+    vi.stubGlobal('crypto', {
+      getRandomValues(bytes: Uint8Array) {
+        return bytes.fill(0)
+      },
+    })
+    try {
+      const probe = new Probe()
+      await probe.sessions.list({})
+      expect(probe.minted).toBe('00000000-0000-4000-8000-000000000000')
+    } finally {
+      vi.unstubAllGlobals()
     }
   })
 })

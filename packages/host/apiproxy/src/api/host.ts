@@ -4,6 +4,7 @@
  */
 
 import type { RpcRequest, RpcResponse } from './rpc.ts'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 /** One directory row of a listing: a child entry or a breadcrumb ancestor. */
 export interface DirectoryEntry {
@@ -13,6 +14,67 @@ export interface DirectoryEntry {
   path: string
   /** Hidden by the host platform's convention (dot-prefixed on POSIX); the client owns whether to show it. */
   hidden: boolean
+}
+
+/** One file or directory row under a session project root. */
+export interface SessionFileEntry {
+  /** Basename for display. */
+  name: string
+  /** POSIX-style path relative to the session cwd (used by `@` picks). */
+  relativePath: string
+  /** Absolute host path for {@link HostApi.openPath}. */
+  path: string
+  /** Entry kind. */
+  kind: 'file' | 'directory'
+  /** Dot-prefixed basename on POSIX. */
+  hidden: boolean
+}
+
+/** host.listSessionDirectory response value. */
+export interface SessionDirectoryListing {
+  /** Listed directory relative to the session cwd (`''` is the project root). */
+  relativePath: string
+  /** Direct children, name-sorted, with heavy directories skipped. */
+  entries: SessionFileEntry[]
+}
+
+/** Top-level PTY process status on the wire (mirrors {@link TerminalSessionStatus}). */
+export type SessionTerminalStatus =
+  | { kind: 'running' }
+  | { kind: 'exited'; exitCode: number | null; signal: string | null }
+
+/** Owner-visible PTY summary for one session. */
+export interface SessionTerminalSnapshot {
+  /** Registry-minted PTY identity. */
+  sessionId: string
+  /** Optional owner-local display name. */
+  name?: string
+  /** Backend type that created the session. */
+  type: string
+  /** Top-level process id when the backend has one. */
+  pid?: number
+  /** Current top-level process status. */
+  status: SessionTerminalStatus
+}
+
+/** Open PTY response: snapshot plus initial scrollback text. */
+export interface SessionTerminalOpenResult extends SessionTerminalSnapshot {
+  /** Initial bounded terminal output from spawn. */
+  motd: string
+}
+
+/** Bounded scrollback page for one PTY. */
+export interface SessionTerminalReadResult {
+  /** Retained text in chronological order. */
+  text: string
+  /** Number of lines currently retained. */
+  totalLines: number
+  /** Inclusive newest-relative offset of the first returned line. */
+  lineBegin: number
+  /** Exclusive newest-relative offset after the returned page. */
+  lineEnd: number
+  /** Whether older retained output exceeded a bound. */
+  truncated: boolean
 }
 
 /** host.listDirectory response value: one directory level plus its ancestry. */
@@ -93,4 +155,47 @@ export interface HostApi {
     request: RpcRequest<{ path: string }>,
     signal: AbortSignal,
   ): Promise<RpcResponse<{ opened: true }>>
+
+  /**
+   * List one directory level under a session's project cwd. Requires
+   * {@link ctx.fs}; paths outside the session root fail with
+   * `session-path-denied`.
+   */
+  listSessionDirectory(
+    request: RpcRequest<{ sessionId: SessionId; relativePath?: string }>,
+    signal: AbortSignal,
+  ): Promise<RpcResponse<SessionDirectoryListing>>
+
+  searchSessionFiles(
+    request: RpcRequest<{ sessionId: SessionId; query: string }>,
+    signal: AbortSignal,
+  ): Promise<RpcResponse<{ matches: SessionFileEntry[]; truncated: boolean }>>
+
+  listSessionTerminals(
+    request: RpcRequest<{ sessionId: SessionId }>,
+  ): Promise<RpcResponse<{ terminals: SessionTerminalSnapshot[] }>>
+
+  openSessionTerminal(
+    request: RpcRequest<{ sessionId: SessionId; name?: string }>,
+    signal: AbortSignal,
+  ): Promise<RpcResponse<SessionTerminalOpenResult>>
+
+  readSessionTerminal(
+    request: RpcRequest<{ sessionId: SessionId; terminalId: string; offset?: number; count?: number }>,
+  ): Promise<RpcResponse<SessionTerminalReadResult>>
+
+  /**
+   * Write one submitted line into a live-agent PTY and wait until that send
+   * settles (prompt return, timeout, or abort).
+   * @param request - chat session id, PTY id, and the line to write.
+   * @param signal - aborts the wait and interrupts the foreground command.
+   */
+  sendSessionTerminal(
+    request: RpcRequest<{ sessionId: SessionId; terminalId: string; text: string }>,
+    signal: AbortSignal,
+  ): Promise<RpcResponse<{ accepted: true }>>
+
+  closeSessionTerminal(
+    request: RpcRequest<{ sessionId: SessionId; terminalId: string }>,
+  ): Promise<RpcResponse<{ closed: boolean }>>
 }

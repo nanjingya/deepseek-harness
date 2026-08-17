@@ -109,6 +109,16 @@ import {
   inspectApiRemoteSession,
 } from '@deepseek-ai/dsh-api-remotes'
 import { canOpenNativePath, openNativePath, openNativeTextFile } from './native-path-opener.ts'
+import { FsError } from '@deepseek-ai/dsh-fs'
+import { TerminalError, TerminalSessionId } from '@deepseek-ai/dsh-terminal'
+import {
+  listSessionDirectory,
+  searchSessionFiles,
+  SessionPathDenied,
+} from './session-files.ts'
+
+/** Default PTY backend type when terminal-bash uses its Schemastery default. */
+const DEFAULT_TERMINAL_BACKEND = 'shell'
 
 /** Page size when history is called without maxMessages. */
 const DEFAULT_MAX_MESSAGES = 50
@@ -628,6 +638,27 @@ async function summarizeCold(
 function directoryError(error: unknown): RpcError {
   if (error instanceof DirectoryPickerError) {
     return { code: error.code, message: error.message, details: { path: error.path } }
+  }
+  return { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} }
+}
+
+/** Map filesystem failures for session-scoped listing and search. */
+function sessionFileError(sessionId: SessionId, error: unknown): RpcError {
+  if (error instanceof SessionPathDenied) {
+    return { code: 'session-path-denied', message: error.message, details: { path: error.path } }
+  }
+  if (error instanceof FsError) {
+    if (error.code === 'FS_NOT_FOUND' || error.code === 'FS_NOT_DIRECTORY' || error.code === 'FS_PERMISSION_DENIED') {
+      return { code: 'directory-unreadable', message: error.message, details: { path: sessionId } }
+    }
+  }
+  return { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} }
+}
+
+/** Map PTY failures onto wire errors. */
+function terminalWireError(error: unknown): RpcError {
+  if (error instanceof TerminalError) {
+    return { code: 'internal', message: error.message, details: {} }
   }
   return { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} }
 }
@@ -2023,6 +2054,37 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     return ok(request, namespaceView(descriptor))
   }
 
+  /** Resolve one attached session record and refuse cwd-less headers. */
+  function sessionProjectFor(sessionId: SessionId): (Session & { header: Session['header'] & { cwd: string } }) | RpcError {
+    const session = ctx.sessions.get(sessionId)
+    if (session === undefined) {
+      return {
+        code: 'session-not-found',
+        message: `session "${sessionId}" not found (not attached)`,
+        details: { sessionId },
+      }
+    }
+    if (session.header.cwd === undefined) {
+      return { code: 'internal', message: `session "${sessionId}" has no project cwd`, details: {} }
+    }
+    return session as Session & { header: Session['header'] & { cwd: string } }
+  }
+
+  /** Require a live agent for PTY ownership; never resume a cold session. */
+  function liveAgentFor(sessionId: SessionId): Agent | RpcError {
+    const found = sessionProjectFor(sessionId)
+    if ('code' in found) return found
+    const agent = ctx.agents.get(sessionId)
+    if (agent === undefined) {
+      return {
+        code: 'internal',
+        message: `session "${sessionId}" has no live agent; attach the session before using terminals`,
+        details: {},
+      }
+    }
+    return agent
+  }
+
   return {
     sessions: {
       // Attached sessions summarize from memory; persisted-but-unattached (cold)
@@ -3007,6 +3069,169 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async openPath(request, signal) {
         return openPath(request, request.payload.path, signal)
+      },
+
+      async listSessionDirectory(request, signal) {
+        const { sessionId, relativePath } = request.payload
+        const found = sessionProjectFor(sessionId)
+        if ('code' in found) return err(request, found)
+        const cwd = found.header.cwd
+        const fs = ctx.get('fs')
+        if (fs === undefined) {
+          return err(request, {
+            code: 'fs-unavailable',
+            message: 'host.listSessionDirectory requires a composed filesystem service (@deepseek-ai/dsh-fs-*)',
+            details: { sessionId },
+          })
+        }
+        try {
+          return ok(request, await listSessionDirectory(fs, cwd, relativePath, signal))
+        } catch (error: unknown) {
+          if (signal.aborted) {
+            return err(request, { code: 'cancelled', message: 'session directory listing was aborted', details: {} })
+          }
+          return err(request, sessionFileError(sessionId, error))
+        }
+      },
+
+      async searchSessionFiles(request, signal) {
+        const { sessionId, query } = request.payload
+        const found = sessionProjectFor(sessionId)
+        if ('code' in found) return err(request, found)
+        const cwd = found.header.cwd
+        const fs = ctx.get('fs')
+        if (fs === undefined) {
+          return err(request, {
+            code: 'fs-unavailable',
+            message: 'host.searchSessionFiles requires a composed filesystem service (@deepseek-ai/dsh-fs-*)',
+            details: { sessionId },
+          })
+        }
+        try {
+          return ok(request, await searchSessionFiles(fs, cwd, query, signal))
+        } catch (error: unknown) {
+          if (signal.aborted) {
+            return err(request, { code: 'cancelled', message: 'session file search was aborted', details: {} })
+          }
+          return err(request, sessionFileError(sessionId, error))
+        }
+      },
+
+      async listSessionTerminals(request) {
+        const { sessionId } = request.payload
+        const agent = liveAgentFor(sessionId)
+        if ('code' in agent) return err(request, agent)
+        const terminals = ctx.get('terminals')
+        if (terminals === undefined) {
+          return err(request, {
+            code: 'terminal-unavailable',
+            message: 'host.listSessionTerminals requires @deepseek-ai/dsh-terminal on the host plane',
+            details: { sessionId },
+          })
+        }
+        return ok(request, { terminals: terminals.list(agent) })
+      },
+
+      async openSessionTerminal(request, signal) {
+        const { sessionId, name } = request.payload
+        const agent = liveAgentFor(sessionId)
+        if ('code' in agent) return err(request, agent)
+        const terminals = ctx.get('terminals')
+        if (terminals === undefined) {
+          return err(request, {
+            code: 'terminal-unavailable',
+            message: 'host.openSessionTerminal requires @deepseek-ai/dsh-terminal on the host plane',
+            details: { sessionId },
+          })
+        }
+        const cwd = agent.session.header.cwd
+        if (cwd === undefined) {
+          return err(request, { code: 'internal', message: `session "${sessionId}" has no project cwd`, details: {} })
+        }
+        try {
+          const opened = await terminals.spawn(agent, {
+            type: DEFAULT_TERMINAL_BACKEND,
+            cwd,
+            ...name !== undefined ? { name } : {},
+          }, signal)
+          return ok(request, opened)
+        } catch (error: unknown) {
+          if (signal.aborted) {
+            return err(request, { code: 'cancelled', message: 'terminal open was aborted', details: {} })
+          }
+          return err(request, terminalWireError(error))
+        }
+      },
+
+      async readSessionTerminal(request) {
+        const { sessionId, terminalId, offset, count } = request.payload
+        const agent = liveAgentFor(sessionId)
+        if ('code' in agent) return err(request, agent)
+        const terminals = ctx.get('terminals')
+        if (terminals === undefined) {
+          return err(request, {
+            code: 'terminal-unavailable',
+            message: 'host.readSessionTerminal requires @deepseek-ai/dsh-terminal on the host plane',
+            details: { sessionId },
+          })
+        }
+        try {
+          const page = terminals.read(agent, TerminalSessionId(terminalId), {
+            ...offset !== undefined ? { offset } : {},
+            ...count !== undefined ? { count } : {},
+          })
+          return ok(request, page)
+        } catch (error: unknown) {
+          return err(request, terminalWireError(error))
+        }
+      },
+
+      async sendSessionTerminal(request, signal) {
+        const { sessionId, terminalId, text } = request.payload
+        const agent = liveAgentFor(sessionId)
+        if ('code' in agent) return err(request, agent)
+        const terminals = ctx.get('terminals')
+        if (terminals === undefined) {
+          return err(request, {
+            code: 'terminal-unavailable',
+            message: 'host.sendSessionTerminal requires @deepseek-ai/dsh-terminal on the host plane',
+            details: { sessionId },
+          })
+        }
+        try {
+          const operation = terminals.startSend(agent, TerminalSessionId(terminalId), {
+            text,
+            submit: true,
+            signal,
+          })
+          await operation.done
+          return ok(request, { accepted: true as const })
+        } catch (error: unknown) {
+          if (signal.aborted) {
+            return err(request, { code: 'cancelled', message: 'terminal send was aborted', details: {} })
+          }
+          return err(request, terminalWireError(error))
+        }
+      },
+
+      async closeSessionTerminal(request) {
+        const { sessionId, terminalId } = request.payload
+        const agent = liveAgentFor(sessionId)
+        if ('code' in agent) return err(request, agent)
+        const terminals = ctx.get('terminals')
+        if (terminals === undefined) {
+          return err(request, {
+            code: 'terminal-unavailable',
+            message: 'host.closeSessionTerminal requires @deepseek-ai/dsh-terminal on the host plane',
+            details: { sessionId },
+          })
+        }
+        try {
+          const closed = await terminals.kill(agent, TerminalSessionId(terminalId), 'web terminal tab')
+          return ok(request, { closed })
+        } catch (error: unknown) {
+          return err(request, terminalWireError(error))
+        }
       },
     },
 

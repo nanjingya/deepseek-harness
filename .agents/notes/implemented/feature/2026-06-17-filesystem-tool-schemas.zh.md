@@ -89,7 +89,7 @@ schema 不将 `expected_hash`、`expected_version` 或 `create_only` 作为面�
 - 面向模型的 `expected_hash`、`expected_version` 或 `create_only` 参数。
 - 目录列表、glob、grep 和搜索工具。
 - 二进制安全的读/写操作。
-- PDF/图片/多模态 `read`。
+- PDF/图片/多模态 `read` — 图片走 `read_image`；工作区 PDF 走同级 `read_pdf`（[决策](2026-08-17-read-pdf-tool.md)），而不是给 `read` 超载。
 - 文件系统工具的 Code Mode 投影值。
 - 规范的 edit diff 格式。
 

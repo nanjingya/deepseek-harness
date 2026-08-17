@@ -670,6 +670,17 @@
         "tests/**/*.ts"
       ]
     },
+    "packages/fs/tool-pdf": {
+      "entry": [
+        "src/index.ts",
+        "src/invariant.ts",
+        "tests/**/*.spec.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ]
+    },
     "packages/mcp/mcp-client": {
       "entry": [
         "tests/**/*.spec.ts",

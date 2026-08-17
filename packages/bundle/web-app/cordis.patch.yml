@@ -99,6 +99,13 @@
     - id: api-gateway
       name: '@deepseek-ai/dsh-host-apiproxy'
 
+    # Agent-owned PTY registry and local bash backend for the web terminal tab.
+    - id: terminal
+      name: '@deepseek-ai/dsh-terminal'
+
+    - id: terminal-bash
+      name: '@deepseek-ai/dsh-terminal-bash'
+
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
 
@@ -237,6 +244,14 @@
     - id: ui-jobs
       name: '@deepseek-ai/dsh-client-ui-jobs'
 
+    # Session project file tree and `@` file references (host RPC, OS open).
+    - id: ui-workspace-files
+      name: '@deepseek-ai/dsh-client-ui-workspace-files'
+
+    # Read-only visual PTY tab over ctx.terminals (line send + scrollback read).
+    - id: ui-terminal
+      name: '@deepseek-ai/dsh-client-ui-terminal'
+
     # Goal surface: GoalBar in the input dock over the goal session projection.
     - id: ui-goal
       name: '@deepseek-ai/dsh-client-ui-goal'
@@ -313,6 +328,9 @@
   disabled: true
 
 - id: tool-fs-search
+  disabled: true
+
+- id: tool-pdf
   disabled: true
 
 - id: tool-str-replace-editor

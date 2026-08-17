@@ -16,6 +16,10 @@ import { hostFrameSchema, muxFrameSchema } from '../api/events.schema.ts'
 import {
   hostCreateDirectoryValueSchema, hostDescribeValueSchema,
   hostListDirectoryValueSchema, hostOpenPathValueSchema, hostPickDirectoryValueSchema,
+  hostListSessionDirectoryValueSchema, hostSearchSessionFilesValueSchema,
+  hostListSessionTerminalsValueSchema, hostOpenSessionTerminalValueSchema,
+  hostReadSessionTerminalValueSchema, hostSendSessionTerminalValueSchema,
+  hostCloseSessionTerminalValueSchema,
 } from '../api/host.schema.ts'
 import {
   sessionCancelValueSchema,
@@ -69,6 +73,19 @@ import {
 } from '../api/subagents.schema.ts'
 
 /**
+ * RFC 4122 version-4 UUID from `crypto.getRandomValues`.
+ * `crypto.randomUUID` is missing on insecure browser origins (LAN HTTP).
+ * @returns hyphenated UUID text.
+ */
+function mintRandomUuid(): string {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/**
  * Client consumption face of the contract (shape a): same domain tree as ApiProxy, but unary
  * methods take the business payload directly — the carrier mints the rpcId and wraps the
  * envelope. Business code needing the call's rpcId reads it from the RpcResponse echo.
@@ -111,6 +128,13 @@ export interface IApiClient {
     listDirectory(payload: RequestPayload<'host.listDirectory'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.listDirectory'>>>
     createDirectory(payload: RequestPayload<'host.createDirectory'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.createDirectory'>>>
     openPath(payload: RequestPayload<'host.openPath'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.openPath'>>>
+    listSessionDirectory(payload: RequestPayload<'host.listSessionDirectory'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.listSessionDirectory'>>>
+    searchSessionFiles(payload: RequestPayload<'host.searchSessionFiles'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.searchSessionFiles'>>>
+    listSessionTerminals(payload: RequestPayload<'host.listSessionTerminals'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.listSessionTerminals'>>>
+    openSessionTerminal(payload: RequestPayload<'host.openSessionTerminal'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.openSessionTerminal'>>>
+    readSessionTerminal(payload: RequestPayload<'host.readSessionTerminal'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.readSessionTerminal'>>>
+    sendSessionTerminal(payload: RequestPayload<'host.sendSessionTerminal'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.sendSessionTerminal'>>>
+    closeSessionTerminal(payload: RequestPayload<'host.closeSessionTerminal'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.closeSessionTerminal'>>>
   }
   workspace: {
     list(payload: RequestPayload<'workspace.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'workspace.list'>>>
@@ -191,6 +215,13 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'host.listDirectory': hostListDirectoryValueSchema,
   'host.createDirectory': hostCreateDirectoryValueSchema,
   'host.openPath': hostOpenPathValueSchema,
+  'host.listSessionDirectory': hostListSessionDirectoryValueSchema,
+  'host.searchSessionFiles': hostSearchSessionFilesValueSchema,
+  'host.listSessionTerminals': hostListSessionTerminalsValueSchema,
+  'host.openSessionTerminal': hostOpenSessionTerminalValueSchema,
+  'host.readSessionTerminal': hostReadSessionTerminalValueSchema,
+  'host.sendSessionTerminal': hostSendSessionTerminalValueSchema,
+  'host.closeSessionTerminal': hostCloseSessionTerminalValueSchema,
   'workspace.list': workspaceListValueSchema,
   'workspace.create': workspaceCreateValueSchema,
   'workspace.rename': workspaceRenameValueSchema,
@@ -295,9 +326,14 @@ export abstract class AbstractApiClient implements IApiClient {
     return loc?.origin !== undefined && loc.origin !== 'null' ? loc.origin : INTERNAL_BASE
   }
 
+  /**
+   * Mint one correlation id. Uses `crypto.getRandomValues`, which browsers
+   * expose on insecure HTTP origins; `crypto.randomUUID` is a secure-context
+   * API and is absent on LAN IP pages such as `http://192.168.x.x:3080`.
+   * @returns a branded RFC 4122 version-4 UUID.
+   */
   protected mintRpcId(): RpcId {
-    // crypto.randomUUID is a Web API (browser + Node ≥19): keeps this base platform-neutral.
-    return RpcId(crypto.randomUUID())
+    return RpcId(mintRandomUuid())
   }
 
   /**
@@ -441,6 +477,13 @@ export abstract class AbstractApiClient implements IApiClient {
     listDirectory: (payload, signal) => this.callUnary('host.listDirectory', payload, signal),
     createDirectory: (payload, signal) => this.callUnary('host.createDirectory', payload, signal),
     openPath: (payload, signal) => this.callUnary('host.openPath', payload, signal),
+    listSessionDirectory: (payload, signal) => this.callUnary('host.listSessionDirectory', payload, signal),
+    searchSessionFiles: (payload, signal) => this.callUnary('host.searchSessionFiles', payload, signal),
+    listSessionTerminals: (payload, signal) => this.callUnary('host.listSessionTerminals', payload, signal),
+    openSessionTerminal: (payload, signal) => this.callUnary('host.openSessionTerminal', payload, signal),
+    readSessionTerminal: (payload, signal) => this.callUnary('host.readSessionTerminal', payload, signal),
+    sendSessionTerminal: (payload, signal) => this.callUnary('host.sendSessionTerminal', payload, signal),
+    closeSessionTerminal: (payload, signal) => this.callUnary('host.closeSessionTerminal', payload, signal),
   }
 
   readonly workspace: IApiClient['workspace'] = {
