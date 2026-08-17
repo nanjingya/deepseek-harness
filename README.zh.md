@@ -6,6 +6,17 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 它采用**一切皆插件**的架构，并由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper)。
 
+## 本 Fork 改动
+
+本仓库为 [`nanjingya/deepseek-herness`](https://github.com/nanjingya/deepseek-herness)，在官方 DeepSeek Harness 基础上增加了：
+
+- **Web 工作区文件树**：会话页眉浏览当前项目目录，点击用系统应用打开文件
+- **输入框 `@` 文件引用**：在 composer 中 `@` 搜索并插入相对路径
+- **会话终端面板**：可视化查看与交互当前 agent 的 PTY（行导向，非完整终端模拟器）
+- **`read_pdf` 工具**：经打包转换器读取 PDF，产出 Markdown 与 Word
+
+完整说明见 **[FORK.zh.md](FORK.zh.md)**。
+
 ## 开发者预览
 
 DeepSeek Harness 目前处于 _开发者预览_ 阶段，正在快速迭代。**未来将出现破坏兼容性的变更。**
@@ -27,8 +38,8 @@ npx @deepseek-ai/dsh web
 如需从仓库源码运行：
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
+git clone https://github.com/nanjingya/deepseek-herness.git
+cd deepseek-herness
 pnpm install
 pnpm run build
 pnpm dsh web
