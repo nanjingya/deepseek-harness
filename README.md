@@ -8,7 +8,7 @@ It uses an architecture where **everything is a plugin**, and is powered by [Cor
 
 ## This fork
 
-This checkout is [`nanjingya/deepseek-herness`](https://github.com/nanjingya/deepseek-herness), extending upstream DeepSeek Harness with:
+This checkout is [`nanjingya/deepseek-harness`](https://github.com/nanjingya/deepseek-harness), extending upstream DeepSeek Harness with:
 
 - **Web workspace file tree** in the session header
 - **`@` file references** in the composer
@@ -38,8 +38,8 @@ The command starts the Web UI, served at `http://127.0.0.1:3080` by default. See
 To run from a repository checkout:
 
 ```sh
-git clone https://github.com/nanjingya/deepseek-herness.git
-cd deepseek-herness
+git clone https://github.com/nanjingya/deepseek-harness.git
+cd deepseek-harness
 pnpm install
 pnpm run build
 pnpm dsh web

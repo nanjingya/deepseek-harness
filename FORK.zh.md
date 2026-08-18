@@ -2,7 +2,7 @@
 
 [English](FORK.md) | 中文
 
-本仓库 [`nanjingya/deepseek-herness`](https://github.com/nanjingya/deepseek-herness) 基于官方 [`deepseek-ai/deepseek-harness`](https://github.com/deepseek-ai/deepseek-harness) 迭代，在 Web 端与文件能力上增加了以下功能。设计思路借鉴社区 Better Sidebar 的部分交互，**未** vendoring 该插件源码。
+本仓库 [`nanjingya/deepseek-harness`](https://github.com/nanjingya/deepseek-harness) 基于官方 [`deepseek-ai/deepseek-harness`](https://github.com/deepseek-ai/deepseek-harness) 迭代，在 Web 端与文件能力上增加了以下功能。设计思路借鉴社区 Better Sidebar 的部分交互，**未** vendoring 该插件源码。
 
 ## 1. Web 工作区文件树
 
@@ -49,8 +49,8 @@ Web 组合包（`packages/bundle/web-app`）额外挂载 `@deepseek-ai/dsh-termi
 与官方一致，从源码：
 
 ```sh
-git clone git@github.com:nanjingya/deepseek-herness.git
-cd deepseek-herness
+git clone git@github.com:nanjingya/deepseek-harness.git
+cd deepseek-harness
 pnpm install
 pnpm run build
 pnpm dsh web
@@ -72,5 +72,5 @@ pnpm dsh web --host 0.0.0.0
 ## 与官方仓库的关系
 
 - **上游**：https://github.com/deepseek-ai/deepseek-harness
-- **本 Fork**：https://github.com/nanjingya/deepseek-herness
-- 本 Fork 命名中的 `herness` 为仓库名拼写，与官方 `harness` 不同；推送目标以本仓库为准。
+- **本 Fork**：https://github.com/nanjingya/deepseek-harness
+- 推送目标以本仓库为准；`origin` 指向上游官方仓库，勿向 `origin` 直接 push。

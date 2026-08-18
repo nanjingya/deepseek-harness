@@ -2,7 +2,7 @@
 
 English | [中文](FORK.zh.md)
 
-This repository [`nanjingya/deepseek-herness`](https://github.com/nanjingya/deepseek-herness) extends the official [`deepseek-ai/deepseek-harness`](https://github.com/deepseek-ai/deepseek-harness) with Web UI and filesystem capabilities below. Interaction ideas are distilled from community Better Sidebar feedback; **Better Sidebar is not vendored**.
+This repository [`nanjingya/deepseek-harness`](https://github.com/nanjingya/deepseek-harness) extends the official [`deepseek-ai/deepseek-harness`](https://github.com/deepseek-ai/deepseek-harness) with Web UI and filesystem capabilities below. Interaction ideas are distilled from community Better Sidebar feedback; **Better Sidebar is not vendored**.
 
 ## 1. Web workspace file tree
 
@@ -44,8 +44,8 @@ The web bundle also mounts `@deepseek-ai/dsh-terminal` and `@deepseek-ai/dsh-ter
 ## Run from this fork
 
 ```sh
-git clone git@github.com:nanjingya/deepseek-herness.git
-cd deepseek-herness
+git clone git@github.com:nanjingya/deepseek-harness.git
+cd deepseek-harness
 pnpm install
 pnpm run build
 pnpm dsh web
@@ -61,4 +61,4 @@ After client or Host RPC changes, rebuild the affected package with `pnpm exec t
 ## Upstream
 
 - **Upstream**: https://github.com/deepseek-ai/deepseek-harness
-- **This fork**: https://github.com/nanjingya/deepseek-herness
+- **This fork**: https://github.com/nanjingya/deepseek-harness

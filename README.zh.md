@@ -8,7 +8,7 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 ## 本 Fork 改动
 
-本仓库为 [`nanjingya/deepseek-herness`](https://github.com/nanjingya/deepseek-herness)，在官方 DeepSeek Harness 基础上增加了：
+本仓库为 [`nanjingya/deepseek-harness`](https://github.com/nanjingya/deepseek-harness)，在官方 DeepSeek Harness 基础上增加了：
 
 - **Web 工作区文件树**：会话页眉浏览当前项目目录，点击用系统应用打开文件
 - **输入框 `@` 文件引用**：在 composer 中 `@` 搜索并插入相对路径
@@ -38,8 +38,8 @@ npx @deepseek-ai/dsh web
 如需从仓库源码运行：
 
 ```sh
-git clone https://github.com/nanjingya/deepseek-herness.git
-cd deepseek-herness
+git clone https://github.com/nanjingya/deepseek-harness.git
+cd deepseek-harness
 pnpm install
 pnpm run build
 pnpm dsh web
